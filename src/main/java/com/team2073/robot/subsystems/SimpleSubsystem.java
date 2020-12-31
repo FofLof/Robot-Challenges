@@ -16,6 +16,9 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     double RightTriggerPressure = getAxis(3);
 // Need Axis Num for Left Analog and Left/Right trigger
     private double output = AxisPos;
+    private boolean isOn = false;
+    private boolean isPressed = false;
+
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
 
@@ -25,6 +28,21 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 
     public double getAxis(int axis) {
         return controller.getRawAxis(axis);
+    }
+
+    public boolean buttonPressed(int bP) {
+        return controller.getRawButtonPressed(bP);
+    }
+
+    public void CheckButton() {
+        if(buttonPressed(4)) {
+            isPressed = !isPressed;
+            if (isPressed = true) {
+                isOn = true;
+            } else {
+                isOn = false;
+            }
+        }
     }
 
     @Override
@@ -63,6 +81,13 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 }
                 output = 0;
                 break;
+            case CRUSIE_CONTROL:
+                CheckButton();
+                if (isOn) {
+                    motor.set(output);
+                } else {
+                    break;
+                }
             default:
                 output = 0;
                 break;
@@ -72,6 +97,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         } else if (output < 0.2) {
             output = 0;
         }
+        CheckButton(); //This might break it but im worried that when you press y again it will stop Cruise control before it has a chance to change
+        // the isOn and isPressed value to false which resets the code so it can go again when y is pressed again
         motor.set(output);
     }
 
@@ -85,6 +112,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         LEFT_TRIGGER_DECREASE,
         RIGHT_TRIGGER_INCREASE,
         PULSEMODE,
+        CRUSIE_CONTROL
 
     }
 
