@@ -43,8 +43,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    setMotor(output);
                 }
+                break;
             case RIGHT_TRIGGER_INCREASE:
                 for (double i = 1; output <= i; output = output + RightTriggerPressure) {
                     try {
@@ -52,9 +52,17 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    setMotor(output);
                 }
-
+                break;
+            case PULSEMODE:
+                output = 0.25;
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                output = 0;
+                break;
             default:
                 output = 0;
                 break;
@@ -75,7 +83,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         STOP,
         HALF_POWER,
         LEFT_TRIGGER_DECREASE,
-        RIGHT_TRIGGER_INCREASE
+        RIGHT_TRIGGER_INCREASE,
+        PULSEMODE,
 
     }
 
