@@ -1,7 +1,6 @@
 package com.team2073.robot;
 
 import com.team2073.robot.commands.HalfPowerCommand;
-import com.team2073.robot.commands.HeldLeftJoystick;
 import com.team2073.robot.commands.LeftTriggerDecrease;
 import com.team2073.robot.commands.RightTriggerIncrease;
 import edu.wpi.first.wpilibj.Joystick;
@@ -22,13 +21,8 @@ public class OperatorInterface {
 
     public void init() {
         a.whileHeld(new HalfPowerCommand());
-        leftJoystick.whenActive(new HeldLeftJoystick());
         lb.whileHeld(new LeftTriggerDecrease());
         rb.whileHeld(new RightTriggerIncrease());
     }
-    public double getRawAxis(int axis) {
-        return controller.getRawAxis(axis);
-    }
-
 
 }

@@ -9,22 +9,10 @@ public class RightTriggerIncrease extends AbstractLoggingCommand {
 
     private ApplicationContext appCtx = ApplicationContext.getInstance();
     private SimpleSubsystem simpleSubsystem = appCtx.getSimpleSubsystem();
-    private OperatorInterface oi = appCtx.getOperatorInterface();
 
     @Override
     protected void initializeDelegate() {
-        //Change axis numbers for later
-        double speed = oi.getRawAxis(1);
-        double pressure = oi.getRawAxis(2);
-        for (double i = 1; speed <= i && speed >= 0; speed = speed + pressure) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            simpleSubsystem.setMotor(speed);
-        }
-
+        simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.RIGHT_TRIGGER_INCREASE);
     }
 
     @Override

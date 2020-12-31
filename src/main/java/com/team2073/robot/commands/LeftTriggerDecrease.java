@@ -9,22 +9,10 @@ public class LeftTriggerDecrease extends AbstractLoggingCommand {
 
     private ApplicationContext appCtx = ApplicationContext.getInstance();
     private SimpleSubsystem simpleSubsystem = appCtx.getSimpleSubsystem();
-    private OperatorInterface oi = appCtx.getOperatorInterface();
 
     @Override
     protected void initializeDelegate() {
-        //Change axis numbers for later
-        double speed = oi.getRawAxis(1);
-        double pressure = oi.getRawAxis(2);
-        for (double i = 0; speed >= i; speed = speed - pressure) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            simpleSubsystem.setMotor(speed);
-        }
-
+        simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.LEFT_TRIGGER_DECREASE);
     }
 
     @Override
