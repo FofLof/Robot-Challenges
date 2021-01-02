@@ -64,6 +64,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                         e.printStackTrace();
                     }
                 }
+                motor.set(output);
                 break;
             case RIGHT_TRIGGER_INCREASE:
                 for (double i = 1; output <= i; output = output + RightTriggerPressure) {
@@ -73,17 +74,23 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                         e.printStackTrace();
                     }
                 }
+                motor.set(output);
                 break;
             case PULSEMODE:
-                output = 0.25;
+                motor.set(0.25);
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                output = 0;
+                motor.set(0);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 break;
-            case CRUSIE_CONTROL:
+            case CRUISE_CONTROL:
                 CheckButton();
                 if (isOn) {
                     motor.set(output);
@@ -121,7 +128,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         LEFT_TRIGGER_DECREASE,
         RIGHT_TRIGGER_INCREASE,
         PULSEMODE,
-        CRUSIE_CONTROL,
+        CRUISE_CONTROL,
         THREE_THOUSAND_REVOLUTIONS
 
     }

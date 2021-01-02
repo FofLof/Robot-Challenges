@@ -15,6 +15,11 @@ public class ThreeThousandRevolutions extends AbstractLoggingCommand{
     }
 
     @Override
+    protected void endDelegate() {
+        simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.STOP);
+    }
+
+    @Override
     protected boolean isFinishedDelegate() {
         return false;
     }
