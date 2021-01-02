@@ -10,16 +10,12 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     private final ApplicationContext appCTX = ApplicationContext.getInstance();
 
     private final CANSparkMax motor = appCTX.getMotor();
-    //Axis is pos is for the Left analog
-    double AxisPos = getAxis(1);
-    double LeftTriggerPressure = getAxis(2);
-    double RightTriggerPressure = getAxis(3);
+    private double output = 0;
 // Need Axis Num for Left Analog and Left/Right trigger
-    private double output = AxisPos;
     private boolean isOn = false;
     private boolean isPressed = false;
     Encoder encode = new Encoder(0, 1);
-
+    double startPos = encode.getDistance();
 
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
@@ -49,32 +45,36 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 
     @Override
     public void onPeriodicAsync() {
+        double AxisPos = getAxis(1);
+        double output = AxisPos;
         switch(currentState) {
             case STOP:
-                output = 0;
+                motor.set(0);
                 break;
             case HALF_POWER:
-                output = 0.5;
+                motor.set(0.5);
                 break;
             case LEFT_TRIGGER_DECREASE:
+                double LeftTriggerPressure = getAxis(2);
                 for (double i = 0; output >= i; output = output - LeftTriggerPressure) {
+                    motor.set(output);
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                motor.set(output);
                 break;
             case RIGHT_TRIGGER_INCREASE:
+                double RightTriggerPressure = getAxis(3);
                 for (double i = 1; output <= i; output = output + RightTriggerPressure) {
+                    motor.set(output);
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                motor.set(output);
                 break;
             case PULSEMODE:
                 motor.set(0.25);
@@ -98,12 +98,43 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     break;
                 }
             case THREE_THOUSAND_REVOLUTIONS:
-                encode.setDistancePerPulse(1/3000);
+                encode.setDistancePerPulse(1/3000); //Might be able to put the encode stuff in OperatorInterface
+                encode.reset();
                 if (encode.getDistance() <= 1) {
                     motor.set(0.5);
                 } else {
                     break;
                 }
+            case STARTING_POSITION:
+                //This has a lot of repeating code might need to fix later
+                double newPos = encode.getDistance();
+                double movementDetector = 0;
+                if (newPos > startPos) {
+                    while (newPos != startPos) {
+                        movementDetector = getAxis(1);
+                        if (movementDetector != 0) {
+                            while (movementDetector != 0) {
+                                movementDetector = getAxis(1);
+                                motor.set(movementDetector);
+                            }
+                        }
+                        motor.set(-0.4);
+                        newPos = encode.getDistance();
+                    }
+                } else if (newPos < startPos) {
+                    while (newPos != startPos) {
+                        movementDetector = getAxis(1);
+                        if (movementDetector != 0) {
+                            while (movementDetector != 0) {
+                                movementDetector = getAxis(1);
+                                motor.set(movementDetector);
+                            }
+                        }
+                        motor.set(0.4);
+                        newPos = encode.getDistance();
+                    }
+                }
+                break;
             default:
                 output = 0;
                 break;
@@ -129,7 +160,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         RIGHT_TRIGGER_INCREASE,
         PULSEMODE,
         CRUISE_CONTROL,
-        THREE_THOUSAND_REVOLUTIONS
-
+        THREE_THOUSAND_REVOLUTIONS,
+        STARTING_POSITION,
+        
     }
 }
