@@ -4,13 +4,13 @@ import com.revrobotics.CANSparkMax;
 import com.team2073.common.periodic.AsyncPeriodicRunnable;
 import com.team2073.robot.ApplicationContext;
 import com.team2073.robot.OperatorInterface;
+import edu.wpi.first.wpilibj.Encoder;
 
 public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicRunnable {
     private final ApplicationContext appCTX = ApplicationContext.getInstance();
-    private OperatorInterface oi = appCTX.getOperatorInterface();
 
     private final CANSparkMax motor = appCTX.getMotor();
-
+    //Axis is pos is for the Left analog
     double AxisPos = getAxis(1);
     double LeftTriggerPressure = getAxis(2);
     double RightTriggerPressure = getAxis(3);
@@ -18,6 +18,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     private double output = AxisPos;
     private boolean isOn = false;
     private boolean isPressed = false;
+    Encoder encode = new Encoder(0, 1);
+
 
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
@@ -88,6 +90,13 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 } else {
                     break;
                 }
+            case THREE_THOUSAND_REVOLUTIONS:
+                encode.setDistancePerPulse(1/3000);
+                if (encode.getDistance() <= 1) {
+                    motor.set(0.5);
+                } else {
+                    break;
+                }
             default:
                 output = 0;
                 break;
@@ -112,12 +121,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         LEFT_TRIGGER_DECREASE,
         RIGHT_TRIGGER_INCREASE,
         PULSEMODE,
-        CRUSIE_CONTROL
+        CRUSIE_CONTROL,
+        THREE_THOUSAND_REVOLUTIONS
 
     }
-
-    public void setMotor(double speed) {
-        motor.set(speed);
-    }
-
 }
