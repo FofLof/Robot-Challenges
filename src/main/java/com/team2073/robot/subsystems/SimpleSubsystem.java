@@ -79,13 +79,13 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
             case PULSEMODE:
                 motor.set(0.25);
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
                 motor.set(0);
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -98,13 +98,13 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     break;
                 }
             case THREE_THOUSAND_REVOLUTIONS:
-                encode.setDistancePerPulse(1/3000); //Might be able to put the encode stuff in OperatorInterface
-                encode.reset();
-                if (encode.getDistance() <= 1) {
+                encode.setDistancePerPulse(1/126000); //Holy shit that number is so wrong but at this speed itll take 5 min lol
+                double updatedDistance = encode.getDistance();
+                while (encode.getDistance() <= 1+updatedDistance) {
                     motor.set(0.5);
-                } else {
-                    break;
+                    encode.getDistance();
                 }
+                break;
             case STARTING_POSITION:
                 //This has a lot of repeating code might need to fix later
                 double newPos = encode.getDistance();
@@ -135,6 +135,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     }
                 }
                 break;
+            case SET_RETURN_TO_POSITION:
+                startPos = encode.getDistance();
             default:
                 output = 0;
                 break;
@@ -162,6 +164,6 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         CRUISE_CONTROL,
         THREE_THOUSAND_REVOLUTIONS,
         STARTING_POSITION,
-        
+        SET_RETURN_TO_POSITION
     }
 }
