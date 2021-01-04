@@ -56,24 +56,20 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 break;
             case LEFT_TRIGGER_DECREASE:
                 double LeftTriggerPressure = getAxis(2);
-                for (double i = 0; output >= i; output = output - LeftTriggerPressure) {
-                    motor.set(output);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                output = output - LeftTriggerPressure;
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 break;
             case RIGHT_TRIGGER_INCREASE:
                 double RightTriggerPressure = getAxis(3);
-                for (double i = 1; output <= i; output = output + RightTriggerPressure) {
-                    motor.set(output);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                output = output + RightTriggerPressure;
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 break;
             case PULSEMODE:
