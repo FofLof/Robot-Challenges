@@ -5,6 +5,9 @@ import com.team2073.common.periodic.AsyncPeriodicRunnable;
 import com.team2073.robot.ApplicationContext;
 import com.team2073.robot.OperatorInterface;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.buttons.JoystickButton;
+
+import static java.lang.Math.abs;
 
 public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicRunnable {
     private final ApplicationContext appCTX = ApplicationContext.getInstance();
@@ -16,7 +19,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     private boolean isPressed = false;
     Encoder encode = new Encoder(0, 1);
     double startPos = encode.getDistance();
-
+    double LeftTriggerPressure = 0;
+    double RightTriggerPressure = 0;
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
 
@@ -29,59 +33,69 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     }
 
     public boolean buttonPressed(int bP) {
-        return controller.getRawButtonPressed(bP);
+        return controller.getRawButton(bP);
     }
 
     public void CheckButton() {
         if(buttonPressed(4)) {
-            isPressed = !isPressed;
-            if (isPressed = true) {
+            if (!isPressed) {
                 isOn = true;
+                isPressed = true;
             } else {
+                isPressed = false;
                 isOn = false;
             }
         }
     }
 
+    public void lbIncrease(){
+        output = output - LeftTriggerPressure;
+    }
+
+    public void rbDecrease() {
+        output = output + RightTriggerPressure;
+    }
+
     @Override
     public void onPeriodicAsync() {
-        double AxisPos = getAxis(1);
-        double output = AxisPos;
+        encode.setDistancePerPulse(1/1260);
+        double LeftTriggerPressure = getAxis(2);
+        double RightTriggerPressure = getAxis(3);
         switch(currentState) {
             case STOP:
-                motor.set(0);
+                output = 0;
                 break;
             case HALF_POWER:
-                motor.set(0.5);
+                output = 0.5;
                 break;
-            case LEFT_TRIGGER_DECREASE:
-                double LeftTriggerPressure = getAxis(2);
-                output = output - LeftTriggerPressure;
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                break;
-            case RIGHT_TRIGGER_INCREASE:
-                double RightTriggerPressure = getAxis(3);
-                output = output + RightTriggerPressure;
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                break;
+            //case LEFT_TRIGGER_DECREASE:
+                //double LeftTriggerPressure = getAxis(2);
+                //output = output - LeftTriggerPressure;
+                //try {
+                    //Thread.sleep(10);
+                //} catch (InterruptedException e) {
+                    //e.printStackTrace();
+                //}
+                //break;
+            //case RIGHT_TRIGGER_INCREASE:
+                //double RightTriggerPressure = getAxis(3);
+                //output = output + RightTriggerPressure;
+                //try {
+                    //Thread.sleep(10);
+                //} catch (InterruptedException e) {
+                    //e.printStackTrace();
+                //}
+                //break;
             case PULSEMODE:
                 motor.set(0.25);
                 try {
-                    Thread.sleep(1000);
+                    wait(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
                 motor.set(0);
                 try {
-                    Thread.sleep(1000);
+                    wait(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -93,12 +107,20 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 } else {
                     break;
                 }
+                double checkJoystick = getAxis(1);
+                if (checkJoystick > output) {
+                    motor.set(checkJoystick);
+                } else if (checkJoystick < output) {
+                    motor.set(output);
+                }
             case THREE_THOUSAND_REVOLUTIONS:
-                encode.setDistancePerPulse(1/126000); //Holy shit that number is so wrong but at this speed itll take 5 min lol
-                double updatedDistance = encode.getDistance();
-                while (encode.getDistance() <= 1+updatedDistance) {
-                    motor.set(0.5);
-                    encode.getDistance();
+                motor.set(0.5); //I used the free speed (I think that means max speed) of 11000 RPM/60/2 (divide by 2 cause i put at half
+                //speed) to get 91.6 RPS then did 3000/91.6 = 32.75 seconds for it to run and get to 3000 revolutions which i converted
+                //to milliseconds
+                try {
+                    wait(32750);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 break;
             case STARTING_POSITION:
@@ -137,9 +159,20 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 output = 0;
                 break;
         }
+        if (controller.getRawButtonPressed(1) == false) {
+            double AxisPos = getAxis(1);
+            output = -AxisPos;
+            if (LeftTriggerPressure != 0) {
+                lbIncrease();
+            } else if (RightTriggerPressure != 0) {
+                rbDecrease();
+            }
+        }
         if (output > 0.8) {
             output = 0.8;
-        } else if (output < 0.2) {
+        } else if (output < -0.8){
+            output = -0.8; //Theres probably a way to use the math class for this
+        } else if (abs(output) < 0.2) {
             output = 0;
         }
         CheckButton(); //This might break it but im worried that when you press y again it will stop Cruise control before it has a chance to change
@@ -154,8 +187,6 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     public enum SimpleSubsystemState {
         STOP,
         HALF_POWER,
-        LEFT_TRIGGER_DECREASE,
-        RIGHT_TRIGGER_INCREASE,
         PULSEMODE,
         CRUISE_CONTROL,
         THREE_THOUSAND_REVOLUTIONS,
