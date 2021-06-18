@@ -14,10 +14,11 @@ public class OperatorInterface {
 
     private final JoystickButton leftJoystick = new JoystickButton(driveStick, 1);
     //Need to change the button numbers later
-    private JoystickButton L1 = new JoystickButton(controller, 1);
+    private JoystickButton L1 = new JoystickButton(controller, 5);
     private JoystickButton y = new JoystickButton(controller, 4);
     private JoystickButton b = new JoystickButton(controller, 2);
     private JoystickButton x = new JoystickButton(controller, 3);
+    private JoystickButton R1 = new JoystickButton(controller, 6);
 
     public void init() {
         a.whileHeld(new HalfPowerCommand());

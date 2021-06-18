@@ -2,6 +2,7 @@ package com.team2073.robot.subsystems;
 
 import com.revrobotics.CANSparkMax;
 import com.team2073.common.periodic.AsyncPeriodicRunnable;
+import com.team2073.common.util.Timer;
 import com.team2073.robot.ApplicationContext;
 import com.team2073.robot.OperatorInterface;
 import edu.wpi.first.wpilibj.Encoder;
@@ -21,6 +22,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     double startPos = encode.getDistance();
     double LeftTriggerPressure = 0;
     double RightTriggerPressure = 0;
+    Timer timer = new Timer();
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
 
@@ -61,6 +63,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         encode.setDistancePerPulse(1/1260);
         double LeftTriggerPressure = getAxis(2);
         double RightTriggerPressure = getAxis(3);
+        System.out.println(output);
         switch(currentState) {
             case STOP:
                 output = 0;
@@ -87,20 +90,18 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 //}
                 //break;
             case PULSEMODE:
+                System.out.println(output);
                 motor.set(0.25);
-                try {
-                    wait(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                timer.start();
+                if (timer.hasWaited(1000)) {
+                    motor.set(0);
                 }
-                motor.set(0);
-                try {
-                    wait(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                if (timer.hasWaited(1000)) {
+                    motor.set(0);
                 }
                 break;
             case CRUISE_CONTROL:
+                System.out.println(output);
                 CheckButton();
                 if (isOn) {
                     motor.set(output);
@@ -114,16 +115,22 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     motor.set(output);
                 }
             case THREE_THOUSAND_REVOLUTIONS:
+                System.out.println(output);
+                timer.start();
                 motor.set(0.5); //I used the free speed (I think that means max speed) of 11000 RPM/60/2 (divide by 2 cause i put at half
                 //speed) to get 91.6 RPS then did 3000/91.6 = 32.75 seconds for it to run and get to 3000 revolutions which i converted
                 //to milliseconds
-                try {
-                    wait(32750);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                if(timer.hasWaited(32750)){
+                    motor.set(0);
                 }
+//                try {
+//                    wait(32750);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
                 break;
             case STARTING_POSITION:
+                System.out.println(output);
                 //This has a lot of repeating code might need to fix later
                 double newPos = encode.getDistance();
                 double movementDetector = 0;
@@ -154,6 +161,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 }
                 break;
             case SET_RETURN_TO_POSITION:
+                System.out.println(output);
                 startPos = encode.getDistance();
             default:
                 output = 0;
