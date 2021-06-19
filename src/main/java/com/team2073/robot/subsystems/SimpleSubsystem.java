@@ -18,13 +18,15 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 // Need Axis Num for Left Analog and Left/Right trigger
     private boolean isOn = false;
     private boolean isPressed = false;
-    Encoder encode = new Encoder(0, 1);
-    double startPos = encode.getDistance();
-    double LeftTriggerPressure = 0;
-    double RightTriggerPressure = 0;
+    private boolean pulsed = false;
+    public double cruiseOutput = 0;
+    private boolean needRotate = false;
+    public double startPosition = 0;
+    double startPos = 0;
     Timer timer = new Timer();
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
+    private SimpleSubsystemState previousState = SimpleSubsystemState.STOP;
 
     public SimpleSubsystem() {
         autoRegisterWithPeriodicRunner();
@@ -38,101 +40,69 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         return controller.getRawButton(bP);
     }
 
+    public double setCruiseOutput() {
+        cruiseOutput = output;
+        return cruiseOutput;
+
+    }
+
     public void CheckButton() {
         if(buttonPressed(4)) {
-            if (!isPressed) {
-                isOn = true;
-                isPressed = true;
-            } else {
-                isPressed = false;
-                isOn = false;
-            }
+            isOn = !isOn;
         }
     }
 
-    public void lbIncrease(){
-        output = output - LeftTriggerPressure;
+    private void triggerControl() {
+        output *= 1 + (-controller.getRawAxis(2) + controller.getRawAxis(3));
     }
 
-    public void rbDecrease() {
-        output = output + RightTriggerPressure;
+    public void setStartPosition() {
+        startPosition = motor.getEncoder().getPosition();
+    }
+
+    private double getAxisOutput() {
+        return -controller.getRawAxis(1);
     }
 
     @Override
     public void onPeriodicAsync() {
-        encode.setDistancePerPulse(1/1260);
-        double LeftTriggerPressure = getAxis(2);
-        double RightTriggerPressure = getAxis(3);
+        output = getAxisOutput();
         System.out.println(output);
         switch(currentState) {
-            case STOP:
-                output = 0;
-                break;
             case HALF_POWER:
                 output = 0.5;
                 break;
-            //case LEFT_TRIGGER_DECREASE:
-                //double LeftTriggerPressure = getAxis(2);
-                //output = output - LeftTriggerPressure;
-                //try {
-                    //Thread.sleep(10);
-                //} catch (InterruptedException e) {
-                    //e.printStackTrace();
-                //}
-                //break;
-            //case RIGHT_TRIGGER_INCREASE:
-                //double RightTriggerPressure = getAxis(3);
-                //output = output + RightTriggerPressure;
-                //try {
-                    //Thread.sleep(10);
-                //} catch (InterruptedException e) {
-                    //e.printStackTrace();
-                //}
-                //break;
             case PULSEMODE:
                 System.out.println(output);
-                motor.set(0.25);
-                timer.start();
-                if (timer.hasWaited(1000)) {
-                    motor.set(0);
+                if (previousState != currentState) {
+                    timer.start();
                 }
                 if (timer.hasWaited(1000)) {
-                    motor.set(0);
+                    pulsed = !pulsed;
+                    timer.start();
+                }
+                if (pulsed) {
+                    output = 0;
+                } else {
+                    output = 0.25;
                 }
                 break;
             case CRUISE_CONTROL:
-                System.out.println(output);
-                CheckButton();
-                if (isOn) {
-                    motor.set(output);
-                } else {
-                    break;
-                }
+                output = cruiseOutput;
                 double checkJoystick = getAxis(1);
-                if (checkJoystick > output) {
-                    motor.set(checkJoystick);
-                } else if (checkJoystick < output) {
-                    motor.set(output);
+                if (abs(checkJoystick) > abs(output)) {
+                    output = checkJoystick;
                 }
+                break;
+            //if (abs(output) < abs(cruiseControl)) { output = cruise; }
             case THREE_THOUSAND_REVOLUTIONS:
                 System.out.println(output);
-                timer.start();
-                motor.set(0.5); //I used the free speed (I think that means max speed) of 11000 RPM/60/2 (divide by 2 cause i put at half
-                //speed) to get 91.6 RPS then did 3000/91.6 = 32.75 seconds for it to run and get to 3000 revolutions which i converted
-                //to milliseconds
-                if(timer.hasWaited(32750)){
-                    motor.set(0);
-                }
-//                try {
-//                    wait(32750);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
+                needRotate = true;
                 break;
             case STARTING_POSITION:
                 System.out.println(output);
                 //This has a lot of repeating code might need to fix later
-                double newPos = encode.getDistance();
+                double newPos = motor.getEncoder().getPosition();
                 double movementDetector = 0;
                 if (newPos > startPos) {
                     while (newPos != startPos) {
@@ -144,7 +114,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                             }
                         }
                         motor.set(-0.4);
-                        newPos = encode.getDistance();
+                        newPos = motor.getEncoder().getPosition();
                     }
                 } else if (newPos < startPos) {
                     while (newPos != startPos) {
@@ -156,26 +126,26 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                             }
                         }
                         motor.set(0.4);
-                        newPos = encode.getDistance();
+                        newPos = motor.getEncoder().getPosition();
                     }
                 }
                 break;
             case SET_RETURN_TO_POSITION:
                 System.out.println(output);
-                startPos = encode.getDistance();
-            default:
-                output = 0;
+                startPos = motor.getEncoder().getPosition();
                 break;
         }
-        if (controller.getRawButtonPressed(1) == false) {
-            double AxisPos = getAxis(1);
-            output = -AxisPos;
-            if (LeftTriggerPressure != 0) {
-                lbIncrease();
-            } else if (RightTriggerPressure != 0) {
-                rbDecrease();
-            }
-        }
+//        if (controller.getRawButtonPressed(1) == false) {
+//            double AxisPos = getAxis(1);
+//            output = -AxisPos;
+//            if (LeftTriggerPressure != 0) {
+//                lbIncrease();
+//            } else if (RightTriggerPressure != 0) {
+//                rbDecrease();
+//            }
+//        }
+        triggerControl();
+
         if (output > 0.8) {
             output = 0.8;
         } else if (output < -0.8){
@@ -183,9 +153,17 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         } else if (abs(output) < 0.2) {
             output = 0;
         }
-        CheckButton(); //This might break it but im worried that when you press y again it will stop Cruise control before it has a chance to change
-        // the isOn and isPressed value to false which resets the code so it can go again when y is pressed again
+        double newPosition = motor.getEncoder().getPosition();
+        System.out.println("Start Position: " + startPosition + "\t Current Position: " + newPosition);
+        if (needRotate) {
+            if (startPosition + 1000 > newPosition) {
+                output = 0.5;
+            } else {
+                needRotate = false;
+            }
+        }
         motor.set(output);
+        previousState = currentState;
     }
 
     public void setCurrentState(SimpleSubsystemState currentState){

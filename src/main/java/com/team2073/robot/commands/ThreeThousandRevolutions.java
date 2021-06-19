@@ -11,6 +11,7 @@ public class ThreeThousandRevolutions extends AbstractLoggingCommand{
 
     @Override
     protected void initializeDelegate() {
+        simpleSubsystem.setStartPosition();
     simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.THREE_THOUSAND_REVOLUTIONS);
     }
 

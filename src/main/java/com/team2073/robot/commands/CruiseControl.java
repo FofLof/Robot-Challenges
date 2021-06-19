@@ -11,7 +11,9 @@ public class CruiseControl extends AbstractLoggingCommand {
 
     @Override
     protected void initializeDelegate() {
+        simpleSubsystem.setCruiseOutput();
         simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.CRUISE_CONTROL);
+
     }
 
     @Override
