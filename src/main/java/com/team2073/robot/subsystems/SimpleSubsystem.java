@@ -5,8 +5,6 @@ import com.team2073.common.periodic.AsyncPeriodicRunnable;
 import com.team2073.common.util.Timer;
 import com.team2073.robot.ApplicationContext;
 import com.team2073.robot.OperatorInterface;
-import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.buttons.JoystickButton;
 
 import static java.lang.Math.abs;
 
@@ -15,19 +13,19 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 
     private final CANSparkMax motor = appCTX.getMotor();
     private double output = 0;
-// Need Axis Num for Left Analog and Left/Right trigger
     private boolean isOn = false;
     private boolean isPressed = false;
     private boolean pulsed = false;
     public double cruiseOutput = 0;
     private boolean needRotate = false;
     public double startPosition = 0;
+    public double beginningPosition = 0;
     double startPos = 0;
+    public boolean rotateToBeginning = false;
     Timer timer = new Timer();
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
     private SimpleSubsystemState previousState = SimpleSubsystemState.STOP;
-
     public SimpleSubsystem() {
         autoRegisterWithPeriodicRunner();
     }
@@ -43,7 +41,11 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     public double setCruiseOutput() {
         cruiseOutput = output;
         return cruiseOutput;
+    }
 
+    public double setBeginningPosition() {
+        beginningPosition = motor.getEncoder().getPosition();
+        return beginningPosition;
     }
 
     public void CheckButton() {
@@ -73,7 +75,6 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 output = 0.5;
                 break;
             case PULSEMODE:
-                System.out.println(output);
                 if (previousState != currentState) {
                     timer.start();
                 }
@@ -94,73 +95,49 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                     output = checkJoystick;
                 }
                 break;
-            //if (abs(output) < abs(cruiseControl)) { output = cruise; }
             case THREE_THOUSAND_REVOLUTIONS:
                 System.out.println(output);
                 needRotate = true;
                 break;
             case STARTING_POSITION:
-                System.out.println(output);
-                //This has a lot of repeating code might need to fix later
-                double newPos = motor.getEncoder().getPosition();
-                double movementDetector = 0;
-                if (newPos > startPos) {
-                    while (newPos != startPos) {
-                        movementDetector = getAxis(1);
-                        if (movementDetector != 0) {
-                            while (movementDetector != 0) {
-                                movementDetector = getAxis(1);
-                                motor.set(movementDetector);
-                            }
-                        }
-                        motor.set(-0.4);
-                        newPos = motor.getEncoder().getPosition();
-                    }
-                } else if (newPos < startPos) {
-                    while (newPos != startPos) {
-                        movementDetector = getAxis(1);
-                        if (movementDetector != 0) {
-                            while (movementDetector != 0) {
-                                movementDetector = getAxis(1);
-                                motor.set(movementDetector);
-                            }
-                        }
-                        motor.set(0.4);
-                        newPos = motor.getEncoder().getPosition();
-                    }
-                }
+                rotateToBeginning = true;
                 break;
             case SET_RETURN_TO_POSITION:
                 System.out.println(output);
-                startPos = motor.getEncoder().getPosition();
+                setBeginningPosition();
                 break;
         }
-//        if (controller.getRawButtonPressed(1) == false) {
-//            double AxisPos = getAxis(1);
-//            output = -AxisPos;
-//            if (LeftTriggerPressure != 0) {
-//                lbIncrease();
-//            } else if (RightTriggerPressure != 0) {
-//                rbDecrease();
-//            }
-//        }
         triggerControl();
 
+        double newPosition = motor.getEncoder().getPosition();
+        if (needRotate) {
+            if (startPosition + 200 > newPosition) {
+                output = 0.5;
+            } else {
+                needRotate = false;
+            }
+        }
+        if (rotateToBeginning) {
+            if (getAxis(1) != 0) {
+                rotateToBeginning = false;
+                output = getAxis(1);
+            }
+            if (!(beginningPosition - 10 < newPosition && newPosition < beginningPosition + 10)) {
+                if (beginningPosition < newPosition) {
+                    output = -0.2;
+                } else if (beginningPosition > newPosition) {
+                    output = 0.2;
+                }
+            } else {
+                rotateToBeginning = false;
+            }
+        }
         if (output > 0.8) {
             output = 0.8;
         } else if (output < -0.8){
             output = -0.8; //Theres probably a way to use the math class for this
         } else if (abs(output) < 0.2) {
             output = 0;
-        }
-        double newPosition = motor.getEncoder().getPosition();
-        System.out.println("Start Position: " + startPosition + "\t Current Position: " + newPosition);
-        if (needRotate) {
-            if (startPosition + 1000 > newPosition) {
-                output = 0.5;
-            } else {
-                needRotate = false;
-            }
         }
         motor.set(output);
         previousState = currentState;
