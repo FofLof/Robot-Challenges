@@ -12,7 +12,7 @@ public class ThreeThousandRevolutions extends AbstractLoggingCommand{
     @Override
     protected void initializeDelegate() {
         simpleSubsystem.setStartPosition();
-    simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.THREE_THOUSAND_REVOLUTIONS);
+        simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.THREE_THOUSAND_REVOLUTIONS);
     }
 
     @Override
@@ -22,6 +22,7 @@ public class ThreeThousandRevolutions extends AbstractLoggingCommand{
 
     @Override
     protected boolean isFinishedDelegate() {
-        return false;
+
+        return simpleSubsystem.needRotate;
     }
 }

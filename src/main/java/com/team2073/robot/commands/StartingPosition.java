@@ -11,17 +11,16 @@ public class StartingPosition extends AbstractLoggingCommand {
 
     @Override
     protected void initializeDelegate() {
-    simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.STARTING_POSITION);
+        simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.STARTING_POSITION);
     }
 
     @Override
     protected void endDelegate() {
-        simpleSubsystem.setCurrentState((SimpleSubsystem.SimpleSubsystemState.STOP));
+        simpleSubsystem.setCurrentState(SimpleSubsystem.SimpleSubsystemState.STOP);
     }
 
     @Override
     protected boolean isFinishedDelegate() {
-        simpleSubsystem.rotateToBeginning = false;
-        return false;
+        return simpleSubsystem.rotateToBeginning;
     }
 }

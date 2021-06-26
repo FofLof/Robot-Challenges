@@ -1,5 +1,6 @@
 package com.team2073.robot.subsystems;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import com.revrobotics.CANSparkMax;
 import com.team2073.common.periodic.AsyncPeriodicRunnable;
 import com.team2073.common.util.Timer;
@@ -17,10 +18,9 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     private boolean isPressed = false;
     private boolean pulsed = false;
     public double cruiseOutput = 0;
-    private boolean needRotate = false;
+    public boolean needRotate = false;
     public double startPosition = 0;
     public double beginningPosition = 0;
-    double startPos = 0;
     public boolean rotateToBeginning = false;
     Timer timer = new Timer();
 
@@ -70,7 +70,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     public void onPeriodicAsync() {
         output = getAxisOutput();
         System.out.println(output);
-        switch(currentState) {
+        switch (currentState) {
             case HALF_POWER:
                 output = 0.5;
                 break;
@@ -111,37 +111,53 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 
         double newPosition = motor.getEncoder().getPosition();
         if (needRotate) {
-            if (startPosition + 200 > newPosition) {
+            if (startPosition + 100 > newPosition) {
                 output = 0.5;
             } else {
                 needRotate = false;
             }
         }
-        if (rotateToBeginning) {
-            if (getAxis(1) != 0) {
-                rotateToBeginning = false;
-                output = getAxis(1);
-            }
-            if (!(beginningPosition - 10 < newPosition && newPosition < beginningPosition + 10)) {
-                if (beginningPosition < newPosition) {
-                    output = -0.2;
-                } else if (beginningPosition > newPosition) {
-                    output = 0.2;
-                }
+        System.out.println(rotateToBeginning);
+        System.out.println(beginningPosition);
+        System.out.println(currentState);
+        System.out.println(motor.getEncoder().getPosition());
+        if (rotateToBeginning && Math.abs(output) < 0.05) {
+            if (beginningPosition + 10 < newPosition ) {
+                output = -0.2;
+            } else if (beginningPosition - 10 > newPosition) {
+                output = 0.2;
             } else {
                 rotateToBeginning = false;
             }
+        } else {
+                rotateToBeginning = false;
         }
-        if (output > 0.8) {
-            output = 0.8;
-        } else if (output < -0.8){
-            output = -0.8; //Theres probably a way to use the math class for this
-        } else if (abs(output) < 0.2) {
-            output = 0;
+//            if (-0.1 < axisInput && axisInput < 0.1) {
+//                if (!(beginningPosition - 10 < newPosition && newPosition < beginningPosition + 10)) {
+//                    if (beginningPosition < newPosition) {
+//                        output = -0.2;
+//                    } else if (beginningPosition > newPosition) {
+//                        output = 0.2;
+//                    }
+//                } else {
+//                    rotateToBeginning = false;
+//                }
+//            } else {
+//                rotateToBeginning = false;
+//            }
+//            } else {
+//                rotateToBeginning = false;
+//            }
+            if (output > 0.8) {
+                output = 0.8;
+            } else if (output < -0.8) {
+                output = -0.8; //Theres probably a way to use the math class for this
+            } else if (abs(output) < 0.2) {
+                output = 0;
+            }
+            motor.set(output);
+            previousState = currentState;
         }
-        motor.set(output);
-        previousState = currentState;
-    }
 
     public void setCurrentState(SimpleSubsystemState currentState){
         this.currentState = currentState;
