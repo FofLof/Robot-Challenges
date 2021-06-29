@@ -66,45 +66,65 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         return -controller.getRawAxis(1);
     }
 
+    private void pulseMode() {
+        if (previousState != currentState) {
+            timer.start();
+        }
+        if (timer.hasWaited(1000)) {
+            pulsed = !pulsed;
+            timer.start();
+        }
+        if (pulsed) {
+            output = 0;
+        } else {
+            output = 0.25;
+        }
+    }
+
+    private void cruiseControl() {
+        output = cruiseOutput;
+        double checkJoystick = getAxis(1);
+        if (abs(checkJoystick) > abs(output)) {
+            output = checkJoystick;
+        }
+    }
+    private void threeKRev() {
+        needRotate = true;
+    }
+    private void startPosition() {
+        rotateToBeginning = true;
+    }
+
+    private void setReturnToPosition() {
+        setBeginningPosition();
+    }
+
+    private void halfPower() {
+        output = 0.5;
+    }
+
     @Override
     public void onPeriodicAsync() {
         output = getAxisOutput();
         System.out.println(output);
         switch (currentState) {
             case HALF_POWER:
-                output = 0.5;
+                halfPower();
                 break;
             case PULSEMODE:
-                if (previousState != currentState) {
-                    timer.start();
-                }
-                if (timer.hasWaited(1000)) {
-                    pulsed = !pulsed;
-                    timer.start();
-                }
-                if (pulsed) {
-                    output = 0;
-                } else {
-                    output = 0.25;
-                }
+                pulseMode();
                 break;
             case CRUISE_CONTROL:
-                output = cruiseOutput;
-                double checkJoystick = getAxis(1);
-                if (abs(checkJoystick) > abs(output)) {
-                    output = checkJoystick;
-                }
+               cruiseControl();
                 break;
             case THREE_THOUSAND_REVOLUTIONS:
-                System.out.println(output);
-                needRotate = true;
+                threeKRev();
                 break;
             case STARTING_POSITION:
-                rotateToBeginning = true;
+                startPosition();
                 break;
             case SET_RETURN_TO_POSITION:
-                System.out.println(output);
-                setBeginningPosition();
+                setReturnToPosition();
                 break;
         }
         triggerControl();
@@ -117,10 +137,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
                 needRotate = false;
             }
         }
-        System.out.println(rotateToBeginning);
-        System.out.println(beginningPosition);
-        System.out.println(currentState);
-        System.out.println(motor.getEncoder().getPosition());
+
         if (rotateToBeginning && Math.abs(output) < 0.05) {
             if (beginningPosition + 10 < newPosition ) {
                 output = -0.2;
@@ -132,26 +149,10 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         } else {
                 rotateToBeginning = false;
         }
-//            if (-0.1 < axisInput && axisInput < 0.1) {
-//                if (!(beginningPosition - 10 < newPosition && newPosition < beginningPosition + 10)) {
-//                    if (beginningPosition < newPosition) {
-//                        output = -0.2;
-//                    } else if (beginningPosition > newPosition) {
-//                        output = 0.2;
-//                    }
-//                } else {
-//                    rotateToBeginning = false;
-//                }
-//            } else {
-//                rotateToBeginning = false;
-//            }
-//            } else {
-//                rotateToBeginning = false;
-//            }
             if (output > 0.8) {
                 output = 0.8;
             } else if (output < -0.8) {
-                output = -0.8; //Theres probably a way to use the math class for this
+                output = -0.8;
             } else if (abs(output) < 0.2) {
                 output = 0;
             }
