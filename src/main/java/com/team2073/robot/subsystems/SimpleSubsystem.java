@@ -6,6 +6,7 @@ import com.team2073.common.periodic.AsyncPeriodicRunnable;
 import com.team2073.common.util.Timer;
 import com.team2073.robot.ApplicationContext;
 import com.team2073.robot.OperatorInterface;
+import com.team2073.robot.PID;
 
 import static java.lang.Math.abs;
 
@@ -14,8 +15,6 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 
     private final CANSparkMax motor = appCTX.getMotor();
     private double output = 0;
-    private boolean isOn = false;
-    private boolean isPressed = false;
     private boolean pulsed = false;
     public double cruiseOutput = 0;
     public boolean needRotate = false;
@@ -23,6 +22,8 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     public double beginningPosition = 0;
     public boolean rotateToBeginning = false;
     Timer timer = new Timer();
+    PID pid = new PID(0.5, 0.001, 0.00008);
+
 
     private SimpleSubsystemState currentState = SimpleSubsystemState.STOP;
     private SimpleSubsystemState previousState = SimpleSubsystemState.STOP;
@@ -32,10 +33,6 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
 
     public double getAxis(int axis) {
         return controller.getRawAxis(axis);
-    }
-
-    public boolean buttonPressed(int bP) {
-        return controller.getRawButton(bP);
     }
 
     public double setCruiseOutput() {
@@ -48,11 +45,24 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         return beginningPosition;
     }
 
-    public void CheckButton() {
-        if(buttonPressed(4)) {
-            isOn = !isOn;
+    public void returnToStart() {
+        pid.set(beginningPosition);
+        pid.calculateOutput(motor.getEncoder().getPosition());
+        output = pid.getOutput();
+        if (motor.getEncoder().getPosition() < beginningPosition + 10 && motor.getEncoder().getPosition() > beginningPosition - 10) {
+            rotateToBeginning = false;
         }
     }
+
+    public void threeKRevCode() {
+        pid.set(100);
+        pid.calculateOutput(motor.getEncoder().getPosition());
+        output = pid.getOutput();
+        if (motor.getEncoder().getPosition() > 100) {
+            needRotate = false;
+        }
+    }
+
 
     private void triggerControl() {
         output *= 1 + (-controller.getRawAxis(2) + controller.getRawAxis(3));
@@ -79,6 +89,10 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         } else {
             output = 0.25;
         }
+    }
+
+    public void motorPosToZero() {
+        motor.getEncoder().setPosition(0);
     }
 
     private void cruiseControl() {
@@ -129,26 +143,29 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
         }
         triggerControl();
 
-        double newPosition = motor.getEncoder().getPosition();
+        //double newPosition = motor.getEncoder().getPosition();
+        System.out.println("Position: " + motor.getEncoder().getPosition());
         if (needRotate) {
-            if (startPosition + 100 > newPosition) {
-                output = 0.5;
-            } else {
-                needRotate = false;
-            }
+            threeKRevCode();
         }
 
-        if (rotateToBeginning && Math.abs(output) < 0.05) {
-            if (beginningPosition + 10 < newPosition ) {
-                output = -0.2;
-            } else if (beginningPosition - 10 > newPosition) {
-                output = 0.2;
-            } else {
-                rotateToBeginning = false;
-            }
+        if (rotateToBeginning && Math.abs(getAxisOutput()) < 0.05) {
+            returnToStart();
         } else {
-                rotateToBeginning = false;
+            rotateToBeginning = false;
         }
+
+//        if (rotateToBeginning && Math.abs(output) < 0.05) {
+//            if (beginningPosition + 10 < newPosition ) {
+//                output = -0.2;
+//            } else if (beginningPosition - 10 > newPosition) {
+//                output = 0.2;
+//            } else {
+//                rotateToBeginning = false;
+//            }
+//        } else {
+//                rotateToBeginning = false;
+//        }
             if (output > 0.8) {
                 output = 0.8;
             } else if (output < -0.8) {
@@ -163,6 +180,7 @@ public class SimpleSubsystem extends OperatorInterface implements AsyncPeriodicR
     public void setCurrentState(SimpleSubsystemState currentState){
         this.currentState = currentState;
     }
+
 
     public enum SimpleSubsystemState {
         STOP,
